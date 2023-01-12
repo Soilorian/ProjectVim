@@ -52,4 +52,5 @@ int whatcommand(char *word) {
         default:
             return -1;
     }
+
 }
