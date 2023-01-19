@@ -38,7 +38,7 @@ int main(){
                     printf("invalid command");
                     break;
                 case 1:
-//                create(command);
+                create(command);
                     break;
                 case limit:
                     break;
