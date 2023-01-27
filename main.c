@@ -11,7 +11,7 @@
 #define limit 1000
 
 char *Atrs[limit]={0};
-bool whatAtrs[limit]={false},end=false, err[limit]={false};
+bool whatAtrs[limit]={false},end=false, err[limit]={false}, success=false;
 long long commandLength;
 int dastoor=0;
 
@@ -72,6 +72,8 @@ char *restWithSp(int i, char *word);
 long long strToNum(char *num);
 
 void insert(char *path, int l, int where, char * str, long long Line, long long c );
+
+void list_to_file(struct linkedlist* list, FILE* f);
 
 int main(){
     mkdir("root");
@@ -421,23 +423,27 @@ void insert(char *path, int l, int where, char *str, long long int Line, long lo
             FILE *f=fopen(path, "r+");
             char buff;
             long long L=1;
-            bool success=false;
             struct linkedlist* Lines=create_linkedlist();
             char **giveMeSec= (char**)malloc(count_line(f) * sizeof(char *));
             int i=0, len=0;
-        char tempchar;
+            int tempchar;
+            fseek(f,0 , SEEK_SET);
+            giveMeSec[len]= malloc(INT_MAX);
             do {
                 tempchar = giveMeSec[len][i++]= fgetc(f);
-                if(tempchar=='\n' || tempchar!=EOF){
+//                printf("%d", tempchar);
+                if(tempchar=='\n' && tempchar!=EOF){
                     realloc((void *)giveMeSec[len], i);
                     add(Lines, giveMeSec[len++], i);
+                    giveMeSec[len]= malloc(INT_MAX);
                     i=0;
                 }
             } while (tempchar!=EOF);
-
-
-        fclose(f);
+            add_with_index(Lines, str, Line, c);
+            list_to_file(Lines, f);
+            fclose(f);
             if(success){
+                success=false;
                 printf("done!\n");
                 return;
             }
@@ -595,4 +601,15 @@ int count_line(FILE *file) {
     return l;
 }
 
-void list_to_file(struct linkedlist* list, )
+void list_to_file(struct linkedlist *list, FILE *f) {
+    if(list->death) {
+        if(list->next!=(void *)0)
+            list_to_file(list->next, f);
+        else
+            return;
+    }
+    fprintf(f,"%s", list->c);
+    if(list->next!=(void *)0)
+        list_to_file(list->next, f);
+    success=true;
+}
