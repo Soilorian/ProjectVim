@@ -604,7 +604,6 @@ void list_to_file(struct linkedlist *list, FILE *f) {
         else
             return;
     }
-//    fseek(f, 0, SEEK_SET);
     fputs(list->c, f);
     if(list->next->c!=(void *)0)
         list_to_file(list->next, f);
@@ -621,7 +620,6 @@ struct linkedlist *fileToList(FILE *f) {
     giveMeSec[len]= malloc(INT_MAX);
     do {
         tempchar = giveMeSec[len][i++]= fgetc(f);
-//                printf("%d", tempchar);
         if(tempchar=='\n' || tempchar==EOF){
             realloc((void *)giveMeSec[len], i);
             if(tempchar==EOF)
