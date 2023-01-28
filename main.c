@@ -43,7 +43,7 @@ void remove_with_index(int n, struct linkedlist * list);
 
 void add(struct linkedlist* list, char *c, int l);
 
-void add_with_index(struct linkedlist* list, char *c, int l, int index);
+void add_with_index(struct linkedlist* list, char *c, int , int l, int index);
 
 int size(struct linkedlist *list);
 
@@ -74,6 +74,8 @@ long long strToNum(char *num);
 void insert(char *path, int l, int where, char * str, long long Line, long long c );
 
 void list_to_file(struct linkedlist* list, FILE* f);
+
+struct linkedlist* fileToList(FILE *f);
 
 int main(){
     mkdir("root");
@@ -152,11 +154,11 @@ char *rest(int i, char *word){
         c= word[++i];
         if(c=='\\'&&word[i+1]=='n'){
             word[i++]='\n';
-            word[i-2]='~';
+            word[i-1]='~';
         }
         if(c=='\\'&&word[i+1]=='\\') {
             word[i++] = '\\';
-            word[i - 2] = '~';
+            word[i - 1] = '~';
         }
     }while(c != ' ' && c!=0 &&c!='\n');
     char *check= malloc(l+1);
@@ -210,7 +212,7 @@ int whatcommand(char *word) {
         case '-':
             break;
         default:
-            goNextLine();
+            //goNextLine();
             return -1;
 
     }
@@ -243,6 +245,10 @@ void checkForAtrs(char *command){
                             test2= restWithSp(i+3, command);
                         else
                             test2= rest(i+3, command);
+                        if(!(isalpha(*test2))){
+                            test2++;
+                            test2[strlen(test2)-1]='\0';
+                        }
                         Atrs[1]=test2;
                     }
                 }
@@ -338,14 +344,14 @@ char *restWithSp(int i, char *word) {
         l++;
         c= word[++i];
         if(c=='\\'&&word[i+1]=='n'){
-            word[i++]='\n';
-            word[i-2]='~';
+            word[++i]='\n';
+            word[i-1]='~';
         }
         if(c=='\\'&&word[i+1]=='\\'){
-            word[i++]='\\';
-            word[i-2]='~';
+            word[++i]='\\';
+            word[i-1]='~';
         }
-    }while(c!=0 &&c!='\n' && (c!=' ' || word[i+1]!='-'));
+    }while(c!=0 &&c!='\n' && (c!='\"' || ((word[i+1]!=' ' || word[i+2]=='-')&&(word[i+1]==0))));
     char *check= malloc(l+1);
     for (int j = 0; j < l; ++j) {
         if(word[j+i-l]=='\0')
@@ -421,25 +427,8 @@ void insert(char *path, int l, int where, char *str, long long int Line, long lo
                 return;
             }
             FILE *f=fopen(path, "r+");
-            char buff;
-            long long L=1;
-            struct linkedlist* Lines=create_linkedlist();
-            char **giveMeSec= (char**)malloc(count_line(f) * sizeof(char *));
-            int i=0, len=0;
-            int tempchar;
-            fseek(f,0 , SEEK_SET);
-            giveMeSec[len]= malloc(INT_MAX);
-            do {
-                tempchar = giveMeSec[len][i++]= fgetc(f);
-//                printf("%d", tempchar);
-                if(tempchar=='\n' && tempchar!=EOF){
-                    realloc((void *)giveMeSec[len], i);
-                    add(Lines, giveMeSec[len++], i);
-                    giveMeSec[len]= malloc(INT_MAX);
-                    i=0;
-                }
-            } while (tempchar!=EOF);
-            add_with_index(Lines, str, Line, c);
+            struct linkedlist *Lines= fileToList(f);
+            add_with_index(Lines, str, strlen(str),Line, c);
             list_to_file(Lines, f);
             fclose(f);
             if(success){
@@ -458,9 +447,9 @@ void insert(char *path, int l, int where, char *str, long long int Line, long lo
     }
 }
 
-void add_with_index(struct linkedlist *list, char *c, int l, int index) {
+void add_with_index(struct linkedlist *list, char *c, int length,int l, int index) {
     if(list->death)
-        add_with_index(list->next, c, l, index);
+        add_with_index(list->next, c, length, l, index);
     if(l==1){
         for (int i = 0; i < list->length; ++i) {
             if(i==index){
@@ -469,11 +458,12 @@ void add_with_index(struct linkedlist *list, char *c, int l, int index) {
                 *((list->c)+i)='\0';
                 strcat(list->c, c);
                 strcat(list->c, temp);
+                list->length= strlen(list->c);
             }
         }
     }
     else
-        add_with_index(list->next, c, l-1, index);
+        add_with_index(list->next, c, length,l-1, index);
 }
 
 void char_fixer(char *smt) {
@@ -492,6 +482,8 @@ struct linkedlist *create_linkedlist(void) {
     list1->death= false;
     list1->next =NULL;
     list1->prev =NULL;
+    list1->length=0;
+    list1->c=NULL;
     return list1;
 }
 
@@ -527,6 +519,8 @@ void add(struct linkedlist *list, char *c, int l) {
         list->next->next=NULL;
         list->next->prev=list;
         list->next->death= false;
+        list->next->c=NULL;
+        list->next->length=0;
     }
     else
         add(list->next, c, l);
@@ -592,7 +586,7 @@ void goNextLine(void) {
 
 int count_line(FILE *file) {
     int l=1;
-    char temp;
+    int temp;
     do {
         temp= fgetc(file);
         if(temp=='\n')
@@ -608,8 +602,35 @@ void list_to_file(struct linkedlist *list, FILE *f) {
         else
             return;
     }
-    fprintf(f,"%s", list->c);
-    if(list->next!=(void *)0)
+    fseek(f, 0, SEEK_SET);
+    fputs(list->c, f);
+    if(list->next->c!=(void *)0)
         list_to_file(list->next, f);
     success=true;
+}
+
+struct linkedlist *fileToList(FILE *f) {
+    long long L=1;
+    struct linkedlist* Lines=create_linkedlist();
+    char **giveMeSec= (char**)malloc(count_line(f) * sizeof(char *));
+    int i=0, len=0;
+    int tempchar;
+    fseek(f,0 , SEEK_SET);
+    giveMeSec[len]= malloc(INT_MAX);
+    do {
+        tempchar = giveMeSec[len][i++]= fgetc(f);
+//                printf("%d", tempchar);
+        if(tempchar=='\n' || tempchar==EOF){
+            realloc((void *)giveMeSec[len], i);
+            if(tempchar==EOF)
+                giveMeSec[len][i-1]='\0';
+            else
+                giveMeSec[len][i]='\0';
+            add(Lines, giveMeSec[len++], i);
+            if(tempchar!=EOF)
+                giveMeSec[len]= malloc(INT_MAX);
+            i=0;
+        }
+    } while (tempchar!=EOF);
+    return Lines;
 }
